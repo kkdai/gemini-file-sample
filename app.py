@@ -228,29 +228,37 @@ def query():
         if not store_names:
             return jsonify({'success': False, 'error': 'No store names provided'}), 400
 
-        # Build file search configuration
-        file_search_dict = {
-            'file_search_store_names': store_names
-        }
-
+        # Build file search configuration and generate content
+        # Following the correct API pattern from documentation
         if metadata_filter:
-            file_search_dict['metadata_filter'] = metadata_filter
-
-        file_search_config = types.FileSearch(**file_search_dict)
-
-        # Generate content with file search
-        # Note: Use camelCase 'fileSearch' not snake_case 'file_search'
-        tool = types.Tool(fileSearch=file_search_config)
-        logger.info(f"Tool created: {tool}")
-
-        config = types.GenerateContentConfig(tools=[tool])
-        logger.info(f"Config created: {config}")
-
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=query_text,
-            config=config
-        )
+            response = client.models.generate_content(
+                model="gemini-2.0-flash-exp",
+                contents=query_text,
+                config=types.GenerateContentConfig(
+                    tools=[
+                        types.Tool(
+                            file_search=types.FileSearch(
+                                file_search_store_names=store_names,
+                                metadata_filter=metadata_filter
+                            )
+                        )
+                    ]
+                )
+            )
+        else:
+            response = client.models.generate_content(
+                model="gemini-2.0-flash-exp",
+                contents=query_text,
+                config=types.GenerateContentConfig(
+                    tools=[
+                        types.Tool(
+                            file_search=types.FileSearch(
+                                file_search_store_names=store_names
+                            )
+                        )
+                    ]
+                )
+            )
 
         # Extract grounding metadata if available
         grounding_metadata = None
