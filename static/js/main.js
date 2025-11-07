@@ -165,6 +165,49 @@ async function listStores() {
     }
 }
 
+// List Documents in Store
+async function listDocuments() {
+    const storeName = document.getElementById('list-docs-store-name').value.trim();
+
+    if (!storeName) {
+        alert('請輸入儲存空間名稱');
+        return;
+    }
+
+    log(`Fetching documents from ${storeName}...`, 'info');
+
+    try {
+        const data = await apiCall(`/api/list-documents?store_name=${encodeURIComponent(storeName)}`);
+
+        const documentsListDiv = document.getElementById('documents-list');
+
+        if (data.documents.length === 0) {
+            documentsListDiv.innerHTML = '<p class="info-text">此儲存空間中沒有檔案。請先上傳檔案！</p>';
+            log('No documents found in store', 'info');
+        } else {
+            documentsListDiv.innerHTML = `<p class="info-text" style="font-weight: bold; color: #28a745;">找到 ${data.count} 個檔案</p>`;
+            data.documents.forEach(doc => {
+                const docItem = document.createElement('div');
+                docItem.className = 'store-item';
+                docItem.innerHTML = `
+                    <p><strong>📄 檔案名稱：</strong><br>
+                    <code style="background: #e3f2fd; padding: 4px 8px; border-radius: 3px; font-size: 13px; display: inline-block; margin-top: 5px;">${doc.name}</code></p>
+                    <p><strong>顯示名稱：</strong> ${doc.display_name}</p>
+                    <p><strong>建立時間：</strong> ${doc.create_time}</p>
+                    <p><strong>更新時間：</strong> ${doc.update_time}</p>
+                `;
+                documentsListDiv.appendChild(docItem);
+            });
+            log(`Found ${data.count} document(s) in store`, 'success');
+        }
+    } catch (error) {
+        const documentsListDiv = document.getElementById('documents-list');
+        documentsListDiv.innerHTML = `<p class="info-text" style="color: #dc3545;">錯誤：${error.message}</p>`;
+        log(`Failed to list documents: ${error.message}`, 'error');
+        alert(`列出檔案失敗：${error.message}`);
+    }
+}
+
 // Delete Store
 async function deleteStore() {
     const storeName = document.getElementById('delete-store-name').value.trim();

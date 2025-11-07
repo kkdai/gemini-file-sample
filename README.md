@@ -5,6 +5,7 @@
 ## 功能特性
 
 - 建立和管理檔案搜尋儲存空間（File Search Stores）
+- **列出儲存空間中的所有檔案**（新功能）
 - 上傳檔案到檔案搜尋儲存空間
 - 支援兩種上傳方式：
   - 直接上傳到儲存空間（一步完成）
@@ -83,6 +84,16 @@ python3 app.py
 #### 檢視儲存空間清單
 - 點擊「重新整理列表」按鈕查看所有已建立的儲存空間
 
+#### 檢視儲存空間中的檔案
+1. 在「檢視儲存空間中的檔案」區域輸入儲存空間名稱（`fileSearchStores/xxx`）
+2. 點擊「📄 列出檔案」按鈕
+3. 查看該儲存空間中所有已匯入的檔案
+4. 檔案資訊包括：
+   - 檔案名稱
+   - 顯示名稱
+   - 建立時間
+   - 更新時間
+
 #### 刪除儲存空間
 1. 在刪除區域輸入完整的儲存空間名稱（`fileSearchStores/xxx`）
 2. 點擊「刪除儲存空間」
@@ -157,6 +168,7 @@ gemini-file-sample/
 ├── requirements.txt       # Python 相依套件
 ├── README.md             # 專案說明
 ├── test_query.py         # 查詢測試腳本
+├── test_list_documents.py # 檔案列表測試腳本
 ├── templates/
 │   └── index.html        # 前端 HTML 介面
 ├── static/
@@ -174,6 +186,7 @@ gemini-file-sample/
 - `GET /` - 主頁面
 - `POST /api/create-store` - 建立檔案搜尋儲存空間
 - `GET /api/list-stores` - 列出所有儲存空間
+- **`GET /api/list-documents` - 列出儲存空間中的所有檔案**（新功能）
 - `POST /api/delete-store` - 刪除儲存空間
 - `POST /api/upload-to-store` - 直接上傳檔案到儲存空間
 - `POST /api/upload-file` - 上傳檔案（分步方式）
@@ -246,6 +259,7 @@ MIT License
 ## 更新記錄
 
 ### 最新版本
+- ✅ **新增列出儲存空間檔案功能**（可查看每個儲存空間中的所有檔案）
 - ✅ 修復查詢功能（改用 gemini-2.5-flash 模型）
 - ✅ 更新 google-genai 至 1.49.0+
 - ✅ 修正參數命名（display_name）

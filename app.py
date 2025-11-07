@@ -5,6 +5,7 @@ import os
 import time
 from werkzeug.utils import secure_filename
 import logging
+import requests
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -289,6 +290,85 @@ def delete_store():
         })
     except Exception as e:
         logger.error(f"Error deleting store: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/list-documents', methods=['GET'])
+def list_documents():
+    """List all documents in a file search store"""
+    try:
+        client = get_client()
+        store_name = request.args.get('store_name')
+
+        if not store_name:
+            return jsonify({'success': False, 'error': 'store_name parameter is required'}), 400
+
+        # Try to use SDK method first
+        try:
+            documents = []
+            # Check if SDK supports documents.list
+            if hasattr(client.file_search_stores, 'documents'):
+                for doc in client.file_search_stores.documents.list(parent=store_name):
+                    documents.append({
+                        'name': doc.name,
+                        'display_name': getattr(doc, 'display_name', 'N/A'),
+                        'create_time': str(getattr(doc, 'create_time', 'N/A')),
+                        'update_time': str(getattr(doc, 'update_time', 'N/A'))
+                    })
+            else:
+                # Fallback to REST API
+                import requests
+                api_key = request.headers.get('X-API-Key') or os.environ.get('GEMINI_API_KEY')
+                url = f"https://generativelanguage.googleapis.com/v1beta/{store_name}/documents"
+                headers = {'Content-Type': 'application/json'}
+                params = {'key': api_key}
+
+                response = requests.get(url, headers=headers, params=params)
+                response.raise_for_status()
+                data = response.json()
+
+                for doc in data.get('documents', []):
+                    documents.append({
+                        'name': doc.get('name', 'N/A'),
+                        'display_name': doc.get('displayName', 'N/A'),
+                        'create_time': doc.get('createTime', 'N/A'),
+                        'update_time': doc.get('updateTime', 'N/A')
+                    })
+
+            return jsonify({
+                'success': True,
+                'documents': documents,
+                'count': len(documents)
+            })
+        except Exception as e:
+            logger.error(f"Error listing documents: {e}")
+            # If SDK method doesn't exist, try REST API
+            import requests
+            api_key = request.headers.get('X-API-Key') or os.environ.get('GEMINI_API_KEY')
+            url = f"https://generativelanguage.googleapis.com/v1beta/{store_name}/documents"
+            headers = {'Content-Type': 'application/json'}
+            params = {'key': api_key}
+
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            documents = []
+            for doc in data.get('documents', []):
+                documents.append({
+                    'name': doc.get('name', 'N/A'),
+                    'display_name': doc.get('displayName', 'N/A'),
+                    'create_time': doc.get('createTime', 'N/A'),
+                    'update_time': doc.get('updateTime', 'N/A')
+                })
+
+            return jsonify({
+                'success': True,
+                'documents': documents,
+                'count': len(documents)
+            })
+
+    except Exception as e:
+        logger.error(f"Error listing documents: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
