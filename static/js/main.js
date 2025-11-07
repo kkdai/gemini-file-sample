@@ -145,15 +145,19 @@ async function listStores() {
             storeListDiv.innerHTML = '<p class="info-text">找不到儲存空間。請先建立一個！</p>';
         } else {
             storeListDiv.innerHTML = '';
-            data.stores.forEach(store => {
+            data.stores.forEach((store, index) => {
                 const storeItem = document.createElement('div');
                 storeItem.className = 'store-item';
                 storeItem.innerHTML = `
                     <p><strong>⚠️ 完整名稱（上傳時必須使用此名稱）：</strong><br>
                     <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-size: 14px; display: inline-block; margin-top: 5px;">${store.name}</code>
-                    <button onclick="copyStoreName('${store.name}')" class="btn btn-small" style="margin-left: 10px;">📋 複製名稱</button></p>
+                    <button onclick="copyStoreName('${store.name}')" class="btn btn-small" style="margin-left: 10px;">📋 複製名稱</button>
+                    <button onclick="toggleDocuments('${store.name}', 'docs-${index}')" class="btn btn-small" style="margin-left: 10px;">📄 列出檔案</button></p>
                     <p><strong>顯示名稱：</strong> ${store.display_name}</p>
                     <p><strong>建立時間：</strong> ${store.create_time}</p>
+                    <div id="docs-${index}" class="documents-container" style="display: none; margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; border-left: 3px solid #007bff;">
+                        <p class="info-text">載入中...</p>
+                    </div>
                 `;
                 storeListDiv.appendChild(storeItem);
             });
@@ -165,46 +169,47 @@ async function listStores() {
     }
 }
 
-// List Documents in Store
-async function listDocuments() {
-    const storeName = document.getElementById('list-docs-store-name').value.trim();
+// Toggle documents display for a store
+async function toggleDocuments(storeName, containerId) {
+    const container = document.getElementById(containerId);
 
-    if (!storeName) {
-        alert('請輸入儲存空間名稱');
+    // If already visible, hide it
+    if (container.style.display === 'block') {
+        container.style.display = 'none';
         return;
     }
+
+    // Show and load documents
+    container.style.display = 'block';
+    container.innerHTML = '<p class="info-text">載入中...</p>';
 
     log(`Fetching documents from ${storeName}...`, 'info');
 
     try {
         const data = await apiCall(`/api/list-documents?store_name=${encodeURIComponent(storeName)}`);
 
-        const documentsListDiv = document.getElementById('documents-list');
-
         if (data.documents.length === 0) {
-            documentsListDiv.innerHTML = '<p class="info-text">此儲存空間中沒有檔案。請先上傳檔案！</p>';
+            container.innerHTML = '<p class="info-text">此儲存空間中沒有檔案。請先上傳檔案！</p>';
             log('No documents found in store', 'info');
         } else {
-            documentsListDiv.innerHTML = `<p class="info-text" style="font-weight: bold; color: #28a745;">找到 ${data.count} 個檔案</p>`;
+            container.innerHTML = `<p class="info-text" style="font-weight: bold; color: #28a745; margin-bottom: 10px;">找到 ${data.count} 個檔案</p>`;
             data.documents.forEach(doc => {
                 const docItem = document.createElement('div');
-                docItem.className = 'store-item';
+                docItem.style.cssText = 'background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #dee2e6;';
                 docItem.innerHTML = `
-                    <p><strong>📄 檔案名稱：</strong><br>
-                    <code style="background: #e3f2fd; padding: 4px 8px; border-radius: 3px; font-size: 13px; display: inline-block; margin-top: 5px;">${doc.name}</code></p>
-                    <p><strong>顯示名稱：</strong> ${doc.display_name}</p>
-                    <p><strong>建立時間：</strong> ${doc.create_time}</p>
-                    <p><strong>更新時間：</strong> ${doc.update_time}</p>
+                    <p style="margin: 5px 0;"><strong>📄 檔案名稱：</strong><br>
+                    <code style="background: #e3f2fd; padding: 3px 6px; border-radius: 3px; font-size: 12px; display: inline-block; margin-top: 3px;">${doc.name}</code></p>
+                    <p style="margin: 5px 0; font-size: 13px;"><strong>顯示名稱：</strong> ${doc.display_name}</p>
+                    <p style="margin: 5px 0; font-size: 13px;"><strong>建立時間：</strong> ${doc.create_time}</p>
+                    <p style="margin: 5px 0; font-size: 13px;"><strong>更新時間：</strong> ${doc.update_time}</p>
                 `;
-                documentsListDiv.appendChild(docItem);
+                container.appendChild(docItem);
             });
             log(`Found ${data.count} document(s) in store`, 'success');
         }
     } catch (error) {
-        const documentsListDiv = document.getElementById('documents-list');
-        documentsListDiv.innerHTML = `<p class="info-text" style="color: #dc3545;">錯誤：${error.message}</p>`;
+        container.innerHTML = `<p class="info-text" style="color: #dc3545;">錯誤：${error.message}</p>`;
         log(`Failed to list documents: ${error.message}`, 'error');
-        alert(`列出檔案失敗：${error.message}`);
     }
 }
 
