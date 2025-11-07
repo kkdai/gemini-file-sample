@@ -1,5 +1,8 @@
 # Gemini File Search API 測試工具
 
+<img width="1232" height="861" alt="image" src="https://github.com/user-attachments/assets/a2537946-7fbd-4f3d-94d7-2bb86579ec4f" />
+
+
 一個簡單的網頁應用程式，用於測試 Google Gemini API 的檔案搜尋功能（File Search）。
 
 ## 功能特性
