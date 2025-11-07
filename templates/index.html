@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini 檔案搜尋 API 測試工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gemini File Search API 測試工具</h1>
+            <p class="subtitle">上傳檔案並測試 Gemini 的檔案搜尋功能</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" onclick="openTab(event, 'settings')">⚙️ 設定</button>
+                <button class="tab-button" onclick="openTab(event, 'store-management')">檔案搜尋儲存空間管理</button>
+                <button class="tab-button" onclick="openTab(event, 'file-upload')">檔案上傳</button>
+                <button class="tab-button" onclick="openTab(event, 'file-query')">查詢測試</button>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content active">
+                <div class="section">
+                    <h2>API Key 設定</h2>
+                    <p class="info-text">請輸入您的 Gemini API Key。API Key 將儲存在瀏覽器的 localStorage 中，不會傳送到伺服器儲存。</p>
+
+                    <div class="form-group">
+                        <label for="api-key-input">Gemini API Key:</label>
+                        <input type="password" id="api-key-input" placeholder="輸入您的 API Key">
+                        <button onclick="toggleApiKeyVisibility()" class="btn btn-small" style="margin-left: 10px;">👁️ 顯示/隱藏</button>
+                    </div>
+
+                    <div class="form-group">
+                        <button onclick="saveApiKey()" class="btn btn-primary">💾 儲存 API Key</button>
+                        <button onclick="clearApiKey()" class="btn btn-danger">🗑️ 清除 API Key</button>
+                    </div>
+
+                    <div id="api-key-status" class="info-box" style="display: none;">
+                        <strong>狀態：</strong> <span id="api-key-status-text"></span>
+                    </div>
+
+                    <div class="section" style="margin-top: 20px; background: #fff3cd; border-left-color: #ffc107;">
+                        <h3>如何取得 API Key？</h3>
+                        <ol>
+                            <li>造訪 <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                            <li>登入您的 Google 帳號</li>
+                            <li>點擊 "Create API Key" 建立新的 API Key</li>
+                            <li>複製 API Key 並貼到上方的輸入框</li>
+                            <li>點擊「儲存 API Key」</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Store Management Tab -->
+            <div id="store-management" class="tab-content">
+                <div class="section">
+                    <h2>建立新的檔案搜尋儲存空間</h2>
+                    <div class="form-group">
+                        <label for="store-name">儲存空間名稱 (Display Name)：</label>
+                        <input type="text" id="store-name" placeholder="my-file-search-store">
+                        <button onclick="createStore()" class="btn btn-primary">建立儲存空間</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>現有的檔案搜尋儲存空間</h2>
+                    <button onclick="listStores()" class="btn btn-secondary">重新整理列表</button>
+                    <div id="store-list" class="store-list">
+                        <p class="info-text">點擊「重新整理列表」查看所有儲存空間</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>刪除檔案搜尋儲存空間</h2>
+                    <div class="form-group">
+                        <label for="delete-store-name">儲存空間名稱：</label>
+                        <input type="text" id="delete-store-name" placeholder="fileSearchStores/...">
+                        <button onclick="deleteStore()" class="btn btn-danger">刪除儲存空間</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Upload Tab -->
+            <div id="file-upload" class="tab-content">
+                <div class="section">
+                    <h2>方法 1：直接上傳到檔案搜尋儲存空間</h2>
+                    <p class="info-text">一步完成上傳和匯入</p>
+                    <div class="form-group">
+                        <label for="upload-store-name">目標儲存空間名稱：</label>
+                        <input type="text" id="upload-store-name" placeholder="fileSearchStores/xxx（從儲存空間管理頁面複製）">
+                        <p class="info-text" style="margin-top: 5px;">💡 請先到「檔案搜尋儲存空間管理」頁面建立儲存空間，然後複製完整名稱（格式：fileSearchStores/xxx）</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="upload-file-name">自訂檔案名稱（選填，用於引用顯示）：</label>
+                        <input type="text" id="upload-file-name" placeholder="例如：robert-graves-autobiography">
+                    </div>
+                    <div class="form-group">
+                        <label for="direct-upload-file">選擇檔案：</label>
+                        <input type="file" id="direct-upload-file">
+                        <button onclick="uploadToStore()" class="btn btn-primary">上傳並匯入</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>方法 2：分步上傳和匯入</h2>
+                    <p class="info-text">先上傳檔案，再匯入到儲存空間</p>
+
+                    <h3>步驟 1：上傳檔案</h3>
+                    <div class="form-group">
+                        <label for="file-name">自訂檔案名稱（用於引用顯示）：</label>
+                        <input type="text" id="file-name" placeholder="例如：robert-graves-autobiography">
+                    </div>
+                    <div class="form-group">
+                        <label for="upload-file">選擇檔案：</label>
+                        <input type="file" id="upload-file">
+                        <button onclick="uploadFile()" class="btn btn-primary">上傳檔案</button>
+                    </div>
+                    <div id="uploaded-file-info" class="info-box" style="display: none;">
+                        <strong>已上傳檔案：</strong> <span id="uploaded-file-name"></span>
+                    </div>
+
+                    <h3>步驟 2：匯入到儲存空間</h3>
+                    <div class="form-group">
+                        <label for="import-store-name">目標儲存空間名稱：</label>
+                        <input type="text" id="import-store-name" placeholder="fileSearchStores/xxx（從儲存空間管理頁面複製）">
+                    </div>
+                    <div class="form-group">
+                        <label for="import-file-name">檔案名稱：</label>
+                        <input type="text" id="import-file-name" placeholder="從上方複製">
+                    </div>
+                    <div class="form-group">
+                        <label>自訂詮釋資料（選填）：</label>
+                        <div id="metadata-container">
+                            <div class="metadata-row">
+                                <input type="text" placeholder="Key (例：author)" class="metadata-key">
+                                <input type="text" placeholder="Value" class="metadata-value">
+                                <select class="metadata-type">
+                                    <option value="string">字串</option>
+                                    <option value="numeric">數字</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="addMetadataRow()" class="btn btn-small">新增詮釋資料</button>
+                    </div>
+                    <button onclick="importFile()" class="btn btn-primary">匯入到儲存空間</button>
+                </div>
+            </div>
+
+            <!-- Query Tab -->
+            <div id="file-query" class="tab-content">
+                <div class="section">
+                    <h2>查詢檔案搜尋儲存空間</h2>
+                    <div class="form-group">
+                        <label for="query-store-names">儲存空間名稱（多個用逗號分隔）：</label>
+                        <input type="text" id="query-store-names" placeholder="fileSearchStores/xxx">
+                    </div>
+                    <div class="form-group">
+                        <label for="query-text">查詢內容：</label>
+                        <textarea id="query-text" rows="3" placeholder="例如：Can you tell me about Robert Graves?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="metadata-filter">詮釋資料篩選器（選填）：</label>
+                        <input type="text" id="metadata-filter" placeholder="例如：author=Robert Graves">
+                    </div>
+                    <button onclick="queryStore()" class="btn btn-primary">執行查詢</button>
+                </div>
+
+                <div class="section">
+                    <h2>查詢結果</h2>
+                    <div id="query-result" class="result-box">
+                        <p class="info-text">查詢結果將顯示在這裡</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>引用資訊 (Grounding Metadata)</h2>
+                    <div id="grounding-metadata" class="result-box">
+                        <p class="info-text">引用資訊將顯示在這裡</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status/Log Area -->
+        <div class="log-section">
+            <h3>操作記錄</h3>
+            <div id="log" class="log-box"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
